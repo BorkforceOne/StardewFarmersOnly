@@ -24,9 +24,10 @@ namespace StardewFarmersOnly
         public override void Entry(IModHelper helper)
         {
             Helper.Events.Player.LevelChanged += OnLevelChanged;
-            
+            Helper.Events.GameLoop.UpdateTicked += OnUpdateTicked_UpdateExperience;
             Helper.Events.GameLoop.SaveLoaded += (sender, args) =>
             {
+                Monitor.Log($"Experience points {Game1.player.experiencePoints}");
                 Monitor.Log("Reading saved settings...", LogLevel.Debug);
                 settings = Helper.Data.ReadSaveData<ModData>(SettingsKey) ?? settings;
                 if (settings.SpecializedSkillType.HasValue)
@@ -66,6 +67,32 @@ namespace StardewFarmersOnly
             settings.SpecializedSkillType = skillType;
             Helper.Data.WriteSaveData(SettingsKey, settings);
             Game1.addHUDMessage(new HUDMessage($"Updated specialized skill to {skill}!", 2));
+        }
+        
+        private void OnUpdateTicked_UpdateExperience(object sender, UpdateTickedEventArgs e)
+        {
+            if (!Context.IsWorldReady)
+                return;
+
+            if (!e.IsMultipleOf(15)) // quarter second
+                return;
+
+            if (!settings.SpecializedSkillType.HasValue)
+                return;
+
+            SkillType[] allowedSkills = { SkillType.Luck, settings.SpecializedSkillType.Value };
+
+            foreach (SkillType skill in Skills.Keys)
+            {
+                if (allowedSkills.Contains(skill))
+                    continue;
+                int skillNum = (int)skill;
+                if (Game1.player.experiencePoints[skillNum] == 0)
+                    continue;
+                string skillName = Skills[skill];
+                Monitor.Log($"Experience reset for {skillName} as it is not the currently specialized skill", LogLevel.Debug);
+                Game1.player.experiencePoints[skillNum] = 0;
+            }
         }
 
         private void OnLevelChanged(object sender, LevelChangedEventArgs e)
@@ -107,7 +134,7 @@ namespace StardewFarmersOnly
         private void DisplayResetMessage(string skillName)
         {
             // Display a message informing the player of the skill reset
-            Game1.addHUDMessage(new HUDMessage($"XP in {skillName} skill has been reset.", 2));
+            Game1.addHUDMessage(new HUDMessage($"Level in {skillName} skill has been reset.", 2));
         }
     }
 }
