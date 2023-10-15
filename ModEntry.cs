@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using StardewModdingAPI;
 using StardewModdingAPI.Enums;
@@ -29,11 +30,23 @@ namespace StardewFarmersOnly
             {
                 Monitor.Log($"Experience points {Game1.player.experiencePoints}");
                 Monitor.Log("Reading saved settings...", LogLevel.Debug);
-                settings = Helper.Data.ReadSaveData<ModData>(SettingsKey) ?? settings;
-                if (settings.SpecializedSkillType.HasValue)
+                try
                 {
-                    string skillName = Skills[settings.SpecializedSkillType.Value];
-                    Game1.addHUDMessage(new HUDMessage($"Currently specialized in {skillName}, experience to all other skills will be removed.", 2));
+                    settings = Helper.Data.ReadSaveData<ModData>(SettingsKey) ?? settings;
+                }
+                catch (Exception e)
+                {
+                    Monitor.Log("Failed to load settings, using default.", LogLevel.Debug);
+                }
+
+                if (settings.SpecializedSkillType.Count > 0)
+                {
+                    string skillNames = GetSpecializedSkillNames();
+                    Game1.addHUDMessage(new HUDMessage($"Currently specialized in {skillNames}, experience to all other skills will be removed.", 2));
+                }
+                else
+                {
+                    Game1.addHUDMessage(new HUDMessage("You are not currently specialized in any skills, use the command set_specialized_skill to start.", 2));
                 }
             };
             
@@ -43,30 +56,34 @@ namespace StardewFarmersOnly
 
         private void ShowCurrentSkill(string command, string[] args)
         {
-            if (!settings.SpecializedSkillType.HasValue)
+            if (settings.SpecializedSkillType.Count == 0)
             {
-                Game1.addHUDMessage(new HUDMessage("You are not currently specialized in any skill.", 2));
+                string options = string.Join(", ", Skills.Values);
+                Game1.addHUDMessage(new HUDMessage($"You are not currently specialized in any skills, available options are {options}.", 2));
                 return;
             }
-            string skillName = Skills[settings.SpecializedSkillType.Value];
-            Game1.addHUDMessage(new HUDMessage($"Currently specialized in {skillName}, experience to all other skills will be removed.", 2));
+            string skillNames = GetSpecializedSkillNames();
+            Game1.addHUDMessage(new HUDMessage($"Currently specialized in {skillNames}, experience to all other skills will be removed.", 2));
         }
 
         private void SetCurrentSkill(string command, string[] args)
         {
             if (args.Length != 1)
                 return;
-            string skill = args[0];
-            if (!Skills.ContainsValue(skill))
+            List<string> skills = args[0].Split(',').ToList();;
+            foreach (var skill in skills)
             {
+                if (Skills.ContainsValue(skill))
+                    continue;
                 string options = string.Join(", ", Skills.Values);
                 Game1.addHUDMessage(new HUDMessage($"Unknown skill {skill}, available options are {options}.", 2));
                 return;
             }
-            SkillType skillType = Skills.First(x => x.Value.Equals(skill)).Key;
+            List<SkillType> skillType = Skills.Where(x => skills.Contains(x.Value)).Select(x => x.Key).ToList();
             settings.SpecializedSkillType = skillType;
             Helper.Data.WriteSaveData(SettingsKey, settings);
-            Game1.addHUDMessage(new HUDMessage($"Updated specialized skill to {skill}!", 2));
+            string skillNames = GetSpecializedSkillNames();
+            Game1.addHUDMessage(new HUDMessage($"Updated specialized skill to {skillNames}!", 2));
         }
         
         private void OnUpdateTicked_UpdateExperience(object sender, UpdateTickedEventArgs e)
@@ -77,10 +94,11 @@ namespace StardewFarmersOnly
             if (!e.IsMultipleOf(15)) // quarter second
                 return;
 
-            if (!settings.SpecializedSkillType.HasValue)
+            if (settings.SpecializedSkillType.Count == 0)
                 return;
 
-            SkillType[] allowedSkills = { SkillType.Luck, settings.SpecializedSkillType.Value };
+            List<SkillType> allowedSkills = new List<SkillType> { SkillType.Luck };
+            allowedSkills = allowedSkills.Concat(settings.SpecializedSkillType).ToList();
 
             foreach (SkillType skill in Skills.Keys)
             {
@@ -89,18 +107,20 @@ namespace StardewFarmersOnly
                 int skillNum = (int)skill;
                 if (Game1.player.experiencePoints[skillNum] == 0)
                     continue;
+                int oldExp = Game1.player.experiencePoints[skillNum];
                 string skillName = Skills[skill];
-                Monitor.Log($"Experience reset for {skillName} as it is not the currently specialized skill", LogLevel.Debug);
+                Monitor.Log($"Experience reset for {skillName} (removed {oldExp} XP) as it is not the currently specialized skill", LogLevel.Debug);
                 Game1.player.experiencePoints[skillNum] = 0;
             }
         }
 
         private void OnLevelChanged(object sender, LevelChangedEventArgs e)
         {
-            if (!e.IsLocalPlayer || !settings.SpecializedSkillType.HasValue)
+            if (!e.IsLocalPlayer || settings.SpecializedSkillType.Count == 0)
                 return;
 
-            SkillType[] allowedSkills = { SkillType.Luck, settings.SpecializedSkillType.Value };
+            List<SkillType> allowedSkills = new List<SkillType> { SkillType.Luck };
+            allowedSkills = allowedSkills.Concat(settings.SpecializedSkillType).ToList();
 
             if (allowedSkills.Contains(e.Skill))
             {
@@ -135,6 +155,11 @@ namespace StardewFarmersOnly
         {
             // Display a message informing the player of the skill reset
             Game1.addHUDMessage(new HUDMessage($"Level in {skillName} skill has been reset.", 2));
+        }
+
+        private string GetSpecializedSkillNames()
+        {
+            return string.Join(",", settings.SpecializedSkillType.Select(skill => Skills[skill]));
         }
     }
 }

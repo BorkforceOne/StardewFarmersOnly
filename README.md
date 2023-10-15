@@ -6,14 +6,14 @@ A simple Stardew Valley mod that allows you to specialize in a particular skill 
 
 ### Dependencies
 
-* This mod requires [Chat Commands](https://www.nexusmods.com/stardewvalley/mods/2092) to configure it.
+* This mod requires [Chat Commands](https://www.nexusmods.com/stardewvalley/mods/2092) to configure it in game, otherwise you can use the configuration commands below as console commands in the SMAPI window.
 
 ### Configuring the mod
 
-Use the following chat commands:
+Use the following console commands:
 
 * /list_specialized_skill - Lists your currently specialized skill
-* /set_specialized_skill <Farming,Mining,Foraging,Fishing,Combat> - Sets your specialized skill
+* /set_specialized_skill <Farming,Mining,Foraging,Fishing,Combat> - Sets your specialized skills, you may select multiple using a comma separated list
 
 This should persist between loads after saving your game, and let you know when you load which skill you are specialized in.
 

@@ -1,9 +1,10 @@
-﻿using StardewModdingAPI.Enums;
+﻿using System.Collections.Generic;
+using StardewModdingAPI.Enums;
 
 namespace StardewFarmersOnly
 {
     class ModData
     {
-        public SkillType? SpecializedSkillType { get; set; }
+        public List<SkillType> SpecializedSkillType { get; set; } = new();
     }
 }
