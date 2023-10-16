@@ -72,7 +72,7 @@ namespace StardewFarmersOnly
             if (args.Length != 1)
             {
                 string options = string.Join(", ", Skills.Values);
-                Game1.addHUDMessage(new HUDMessage($"Use /set_skill <{options}> to set current specialized skills.", 2));
+                Game1.addHUDMessage(new HUDMessage($"Use /set_skill {options} to set current specialized skills, choose any number of these in a comma seperated list.", 2));
                 return;
             }
             List<string> skills = args[0].Split(',').ToList().Select(skill => skill.Trim().ToLower()).ToList();
