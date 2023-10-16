@@ -30,14 +30,15 @@ namespace StardewFarmersOnly
             {
                 Monitor.Log($"Experience points {Game1.player.experiencePoints}");
                 Monitor.Log("Reading saved settings...", LogLevel.Debug);
-                try
-                {
-                    settings = Helper.Data.ReadSaveData<ModData>(SettingsKey) ?? settings;
-                }
-                catch (Exception e)
-                {
-                    Monitor.Log("Failed to load settings, using default.", LogLevel.Debug);
-                }
+                // TODO: Make this work with multiplayer correctly
+                // try
+                // {
+                //     settings = Helper.Data.ReadSaveData<ModData>(SettingsKey) ?? settings;
+                // }
+                // catch (Exception e)
+                // {
+                //     Monitor.Log("Failed to load settings, using default.", LogLevel.Debug);
+                // }
 
                 if (settings.SpecializedSkillType.Count > 0)
                 {
@@ -46,12 +47,12 @@ namespace StardewFarmersOnly
                 }
                 else
                 {
-                    Game1.addHUDMessage(new HUDMessage("You are not currently specialized in any skills, use the command set_specialized_skill to start.", 2));
+                    Game1.addHUDMessage(new HUDMessage("You are not currently specialized in any skills, use the command set_skill to start.", 2));
                 }
             };
             
-            Helper.ConsoleCommands.Add("list_specialized_skill", "List currently specialized skill.", ShowCurrentSkill);
-            Helper.ConsoleCommands.Add("set_specialized_skill", "Set currently specialized skill.", SetCurrentSkill);
+            Helper.ConsoleCommands.Add("list_skill", "List currently specialized skill.", ShowCurrentSkill);
+            Helper.ConsoleCommands.Add("set_skill", "Set currently specialized skill.", SetCurrentSkill);
         }
 
         private void ShowCurrentSkill(string command, string[] args)
@@ -69,19 +70,24 @@ namespace StardewFarmersOnly
         private void SetCurrentSkill(string command, string[] args)
         {
             if (args.Length != 1)
+            {
+                string options = string.Join(", ", Skills.Values);
+                Game1.addHUDMessage(new HUDMessage($"Use /set_skill <{options}> to set current specialized skills.", 2));
                 return;
-            List<string> skills = args[0].Split(',').ToList();;
+            }
+            List<string> skills = args[0].Split(',').ToList().Select(skill => skill.Trim().ToLower()).ToList();
             foreach (var skill in skills)
             {
-                if (Skills.ContainsValue(skill))
+                if (Skills.Select(x => x.Value.ToLower()).ToList().Contains(skill))
                     continue;
                 string options = string.Join(", ", Skills.Values);
                 Game1.addHUDMessage(new HUDMessage($"Unknown skill {skill}, available options are {options}.", 2));
                 return;
             }
-            List<SkillType> skillType = Skills.Where(x => skills.Contains(x.Value)).Select(x => x.Key).ToList();
+            List<SkillType> skillType = Skills.Where(x => skills.Contains(x.Value.ToLower())).Select(x => x.Key).ToList();
             settings.SpecializedSkillType = skillType;
-            Helper.Data.WriteSaveData(SettingsKey, settings);
+            // TODO: Make this work with multiplayer correctly
+            // Helper.Data.WriteSaveData(SettingsKey, settings);
             string skillNames = GetSpecializedSkillNames();
             Game1.addHUDMessage(new HUDMessage($"Updated specialized skill to {skillNames}!", 2));
         }

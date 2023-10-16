@@ -1,8 +1,8 @@
 ﻿{
   "Name": "Farmers Only",
   "Author": "BorkforceOne",
-  "Version": "0.0.1",
-  "Description": "Lock XP in one particular skill",
+  "Version": "0.0.3",
+  "Description": "Lock XP in any set of specified skills",
   "UniqueID": "borkforceone.farmersonly",
   "EntryDll": "StardewFarmersOnly.dll",
   "MinimumApiVersion": "3.0.0",
